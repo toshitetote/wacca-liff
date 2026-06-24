@@ -143,7 +143,7 @@
   <div id="loadingArea" class="loading">読み込み中...</div>
 
   <form id="registrationForm" class="hidden" onsubmit="submitRegistration(event)">
-        <div class="section-title">📝 利用者登録</div>
+    <div class="section-title">📝 利用者登録</div>
     <div style="background:#FFF3E0; border-left:4px solid #FF6B35; padding:12px 14px; border-radius:6px; margin-bottom:20px; font-size:13px; color:#555; line-height:1.7;">
       こども食堂を安心安全にご利用いただくために、食中毒等の保険加入の対象とさせていただきます。そのために、以下の情報をご登録いただいております。登録は初回のみです。
     </div>
@@ -285,7 +285,8 @@
     btn.disabled = true;
     btn.textContent = '送信中...';
 
-    const data = {
+    const params = new URLSearchParams({
+      action: 'registerUser',
       userId: lineUserId,
       name: document.getElementById('reg_name').value.trim(),
       email: document.getElementById('reg_email').value.trim(),
@@ -293,14 +294,10 @@
       birthdate: document.getElementById('reg_birthdate').value,
       zip: document.getElementById('reg_zip').value.trim(),
       address: document.getElementById('reg_address').value.trim()
-    };
+    });
 
     try {
-      const res = await fetch(GAS_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'registerUser', data })
-      });
+      const res = await fetch(`${GAS_URL}?${params}`);
       const result = await res.json();
 
       const msg = document.getElementById('regMessage');
@@ -330,18 +327,15 @@
     btn.disabled = true;
     btn.textContent = '送信中...';
 
-    const data = {
+    const params = new URLSearchParams({
+      action: 'submitReservation',
       userId: lineUserId,
       eventDate: document.getElementById('eventDate').value,
       count: document.getElementById('count').value
-    };
+    });
 
     try {
-      const res = await fetch(GAS_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'submitReservation', data })
-      });
+      const res = await fetch(`${GAS_URL}?${params}`);
       const result = await res.json();
 
       const msg = document.getElementById('resultMessage');
