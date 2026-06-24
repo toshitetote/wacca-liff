@@ -315,7 +315,7 @@
     } catch (err) {
       const msg = document.getElementById('regMessage');
       msg.className = 'message error';
-      msg.textContent = '⚠️ 送信に失敗しました。もう一度お試しください。';
+      msg.textContent = '⚠️ ' + err.toString();
       btn.disabled = false;
       btn.textContent = '登録する';
     }
@@ -352,7 +352,7 @@
     } catch (err) {
       const msg = document.getElementById('resultMessage');
       msg.className = 'message error';
-      msg.textContent = '⚠️ 送信に失敗しました。もう一度お試しください。';
+      msg.textContent = '⚠️ ' + err.toString();
       btn.disabled = false;
       btn.textContent = '予約を確定する';
     }
