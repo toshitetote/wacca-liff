@@ -218,8 +218,9 @@
     </div>
 
     <button type="submit" class="btn" id="submitBtn">予約を確定する</button>
-    <div id="resultMessage" class="message"></div>
   </form>
+
+  <div id="resultMessage" class="message"></div>
 </div>
 
 <script>
@@ -340,12 +341,14 @@
 
       const msg = document.getElementById('resultMessage');
       if (result.success) {
+        document.getElementById('reservationForm').classList.add('hidden');
         msg.className = 'message success';
-        msg.textContent = '✅ ' + result.message;
-        document.getElementById('reservationForm').style.display = 'none';
+        msg.textContent = '✅ 予約が完了しました！またのご来場をお待ちしております🍚';
+        msg.style.display = 'block';
       } else {
         msg.className = 'message error';
         msg.textContent = '⚠️ ' + result.message;
+        msg.style.display = 'block';
         btn.disabled = false;
         btn.textContent = '予約を確定する';
       }
@@ -353,6 +356,7 @@
       const msg = document.getElementById('resultMessage');
       msg.className = 'message error';
       msg.textContent = '⚠️ ' + err.toString();
+      msg.style.display = 'block';
       btn.disabled = false;
       btn.textContent = '予約を確定する';
     }
