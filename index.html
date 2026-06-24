@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WACCA 予約フォーム</title>
+  <script src="https://static.line-scdn.net/liff/edge/versions/2.22.3/sdk.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Hiragino Sans', sans-serif;
+      background: #FFF8F5;
+      min-height: 100vh;
+      padding: 24px 16px 48px;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 28px;
+    }
+    .header h1 { font-size: 22px; color: #FF6B35; margin-bottom: 4px; }
+    .header p { font-size: 13px; color: #888; }
+
+    .card {
+      background: #fff;
+      border-radius: 16px;
+      padding: 24px 20px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+    }
+
+    .section-title {
+      font-size: 15px;
+      font-weight: bold;
+      color: #FF6B35;
+      margin-bottom: 20px;
+      padding-bottom: 8px;
+      border-bottom: 2px solid #FFE0D0;
+    }
+
+    .form-group { margin-bottom: 18px; }
+    label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 6px;
+    }
+    label .required { color: #FF6B35; margin-left: 4px; }
+
+    input, select {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1.5px solid #E0E0E0;
+      border-radius: 10px;
+      font-size: 16px;
+      color: #333;
+      background: #FAFAFA;
+      transition: border-color 0.2s;
+      -webkit-appearance: none;
+    }
+    input:focus, select:focus {
+      outline: none;
+      border-color: #FF6B35;
+      background: #fff;
+    }
+
+    .consent-box {
+      background: #FFF8F5;
+      border: 1.5px solid #FFD0B8;
+      border-radius: 10px;
+      padding: 14px;
+      margin-bottom: 20px;
+    }
+    .consent-box label {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      font-size: 13px;
+      font-weight: normal;
+      color: #444;
+      cursor: pointer;
+    }
+    .consent-box input[type="checkbox"] {
+      width: 20px;
+      min-width: 20px;
+      height: 20px;
+      margin-top: 1px;
+      accent-color: #FF6B35;
+    }
+    .consent-box a {
+      color: #FF6B35;
+      text-decoration: underline;
+    }
+
+    .btn {
+      width: 100%;
+      padding: 15px;
+      background: #FF6B35;
+      color: #fff;
+      border: none;
+      border-radius: 12px;
+      font-size: 17px;
+      font-weight: bold;
+      cursor: pointer;
+      margin-top: 8px;
+      transition: opacity 0.2s;
+    }
+    .btn:active { opacity: 0.85; }
+    .btn:disabled { background: #ccc; cursor: not-allowed; }
+
+    .message {
+      margin-top: 20px;
+      padding: 14px;
+      border-radius: 10px;
+      font-size: 14px;
+      text-align: center;
+      display: none;
+    }
+    .message.success { background: #E8F5E9; color: #2E7D32; display: block; }
+    .message.error   { background: #FFEBEE; color: #C62828; display: block; }
+
+    .loading {
+      text-align: center;
+      color: #888;
+      font-size: 14px;
+      padding: 40px 0;
+    }
+
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <h1>🍚 WACCA</h1>
+  <p id="headerSub">読み込み中...</p>
+</div>
+
+<div class="card">
+  <div id="loadingArea" class="loading">読み込み中...</div>
+
+  <!-- 利用者登録フォーム -->
+  <form id="registrationForm" class="hidden" onsubmit="submitRegistration(event)">
+    <div class="section-title">📝 利用者登録</div>
+
+    <div class="form-group">
+      <label>氏名 <span class="required">*</span></label>
+      <input type="text" id="reg_name" placeholder="例：田中 花子" required maxlength="50">
+    </div>
+    <div class="form-group">
+      <label>メールアドレス <span class="required">*</span></label>
+      <input type="email" id="reg_email" placeholder="例：example@email.com" required maxlength="100">
+    </div>
+    <div class="form-group">
+      <label>電話番号 <span class="required">*</span></label>
+      <input type="tel" id="reg_phone" placeholder="例：090-0000-0000" required maxlength="20">
+    </div>
+    <div class="form-group">
+      <label>生年月日 <span class="required">*</span></label>
+      <input type="date" id="reg_birthdate" required>
+    </div>
+    <div class="form-group">
+      <label>郵便番号 <span class="required">*</span></label>
+      <input type="text" id="reg_zip" placeholder="例：123-4567" required maxlength="10">
+    </div>
+    <div class="form-group">
+      <label>住所 <span class="required">*</span></label>
+      <input type="text" id="reg_address" placeholder="例：東京都○○区○○町1-2-3" required maxlength="200">
+    </div>
+
+    <div class="consent-box">
+      <label>
+        <input type="checkbox" id="reg_consent" required>
+        <span>
+          <a href="https://script.google.com/macros/s/AKfycbwfwN7iIYY-7VxG5JCjkjTG3E5XPrHbxWN7lNeuK9_ScyDXNwcwFuS8vYGZh2wk3oJI/exec?action=privacy" target="_blank">個人情報の取り扱い</a>について同意します
+        </span>
+      </label>
+    </div>
+
+    <button type="submit" class="btn" id="regBtn">登録する</button>
+    <div id="regMessage" class="message"></div>
+  </form>
+
+  <!-- 予約フォーム -->
+  <form id="reservationForm" class="hidden" onsubmit="submitReservation(event)">
+    <div class="section-title">📅 来場予約</div>
+
+    <div class="form-group">
+      <label>開催日を選ぶ <span class="required">*</span></label>
+      <select id="eventDate" required>
+        <option value="">選択してください</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>参加人数 <span class="required">*</span></label>
+      <select id="count" required>
+        <option value="">選択してください</option>
+        <option value="1">1名</option>
+        <option value="2">2名</option>
+        <option value="3">3名</option>
+        <option value="4">4名</option>
+        <option value="5">5名</option>
+        <option value="6">6名以上</option>
+      </select>
+    </div>
+
+    <div class="consent-box">
+      <label>
+        <input type="checkbox" id="allergy_consent" required>
+        <span>
+          提供される食事にアレルギー物質が含まれる可能性があることを理解し、自己の責任において参加します
+        </span>
+      </label>
+    </div>
+
+    <button type="submit" class="btn" id="submitBtn">予約を確定する</button>
+    <div id="resultMessage" class="message"></div>
+  </form>
+</div>
+
+<script>
+  let lineUserId = null;
+  let userInfo = null;
+
+  const GAS_URL = 'https://script.google.com/macros/s/AKfycbwfwN7iIYY-7VxG5JCjkjTG3E5XPrHbxWN7lNeuK9_ScyDXNwcwFuS8vYGZh2wk3oJI/exec';
+
+  async function init() {
+    try {
+      await liff.init({ liffId: '2010340510-QLo64pFE' });
+
+      if (!liff.isLoggedIn()) {
+        liff.login();
+        return;
+      }
+
+      const profile = await liff.getProfile();
+      lineUserId = profile.userId;
+
+      // 登録済みチェック
+      const res = await fetch(`${GAS_URL}?action=checkRegistered&userId=${lineUserId}`);
+      const data = await res.json();
+
+      document.getElementById('loadingArea').style.display = 'none';
+
+      if (data.registered) {
+        // 登録済み → 予約フォームへ
+        document.getElementById('headerSub').textContent = '来場予約フォーム';
+        await loadEvents();
+        document.getElementById('reservationForm').classList.remove('hidden');
+      } else {
+        // 未登録 → 利用者登録フォームへ
+        document.getElementById('headerSub').textContent = '初回登録フォーム';
+        document.getElementById('registrationForm').classList.remove('hidden');
+      }
+
+    } catch (e) {
+      document.getElementById('loadingArea').textContent = 'エラーが発生しました。LINEアプリから開いてください。';
+    }
+  }
+
+  async function loadEvents() {
+    const res = await fetch(`${GAS_URL}?action=getEvents`);
+    const events = await res.json();
+    const select = document.getElementById('eventDate');
+
+    if (events.length === 0) {
+      const opt = document.createElement('option');
+      opt.textContent = '現在予約できる開催日がありません';
+      opt.disabled = true;
+      select.appendChild(opt);
+      return;
+    }
+
+    events.forEach(ev => {
+      const opt = document.createElement('option');
+      opt.value = ev.date;
+      opt.textContent = `${ev.dateLabel}　${ev.location}`;
+      select.appendChild(opt);
+    });
+  }
+
+  async function submitRegistration(e) {
+    e.preventDefault();
+    const btn = document.getElementById('regBtn');
+    btn.disabled = true;
+    btn.textContent = '送信中...';
+
+    const data = {
+      userId: lineUserId,
+      name: document.getElementById('reg_name').value.trim(),
+      email: document.getElementById('reg_email').value.trim(),
+      phone: document.getElementById('reg_phone').value.trim(),
+      birthdate: document.getElementById('reg_birthdate').value,
+      zip: document.getElementById('reg_zip').value.trim(),
+      address: document.getElementById('reg_address').value.trim()
+    };
+
+    try {
+      const result = await new Promise((resolve, reject) => {
+        google.script.run
+          .withSuccessHandler(resolve)
+          .withFailureHandler(reject)
+          .registerUser(data);
+      });
+
+      const msg = document.getElementById('regMessage');
+      if (result.success) {
+        // 登録成功 → 予約フォームへ切り替え
+        document.getElementById('registrationForm').classList.add('hidden');
+        document.getElementById('headerSub').textContent = '来場予約フォーム';
+        await loadEvents();
+        document.getElementById('reservationForm').classList.remove('hidden');
+      } else {
+        msg.className = 'message error';
+        msg.textContent = '⚠️ ' + result.message;
+        btn.disabled = false;
+        btn.textContent = '登録する';
+      }
+    } catch (err) {
+      const msg = document.getElementById('regMessage');
+      msg.className = 'message error';
+      msg.textContent = '⚠️ 送信に失敗しました。もう一度お試しください。';
+      btn.disabled = false;
+      btn.textContent = '登録する';
+    }
+  }
+
+  async function submitReservation(e) {
+    e.preventDefault();
+    const btn = document.getElementById('submitBtn');
+    btn.disabled = true;
+    btn.textContent = '送信中...';
+
+    const data = {
+      userId: lineUserId,
+      eventDate: document.getElementById('eventDate').value,
+      count: document.getElementById('count').value
+    };
+
+    try {
+      const result = await new Promise((resolve, reject) => {
+        google.script.run
+          .withSuccessHandler(resolve)
+          .withFailureHandler(reject)
+          .submitReservation(data);
+      });
+
+      const msg = document.getElementById('resultMessage');
+      if (result.success) {
+        msg.className = 'message success';
+        msg.textContent = '✅ ' + result.message;
+        document.getElementById('reservationForm').style.display = 'none';
+      } else {
+        msg.className = 'message error';
+        msg.textContent = '⚠️ ' + result.message;
+        btn.disabled = false;
+        btn.textContent = '予約を確定する';
+      }
+    } catch (err) {
+      const msg = document.getElementById('resultMessage');
+      msg.className = 'message error';
+      msg.textContent = '⚠️ 送信に失敗しました。もう一度お試しください。';
+      btn.disabled = false;
+      btn.textContent = '予約を確定する';
+    }
+  }
+
+  init();
+</script>
+</body>
+</html>
