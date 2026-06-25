@@ -275,7 +275,7 @@
     events.forEach(ev => {
       const opt = document.createElement('option');
       opt.value = ev.date;
-      opt.textContent = `${ev.dateLabel}　${ev.location}`;
+      opt.textContent = `${ev.dateLabel} ${ev.time}　${ev.location}`;
       select.appendChild(opt);
     });
   }
