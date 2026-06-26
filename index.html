@@ -186,6 +186,36 @@
     <div id="regMessage" class="message"></div>
   </form>
 
+  <form id="updateForm" class="hidden" onsubmit="submitUpdate(event)">
+    <div class="section-title">✏️ 登録情報の変更</div>
+    <div class="form-group">
+      <label>氏名 <span class="required">*</span></label>
+      <input type="text" id="upd_name" required maxlength="50">
+    </div>
+    <div class="form-group">
+      <label>メールアドレス <span style="color:#888; font-size:11px; margin-left:4px;">任意（登録すると開催案内・リマインドが届きます）</span></label>
+      <input type="email" id="upd_email" maxlength="100">
+    </div>
+    <div class="form-group">
+      <label>電話番号 <span class="required">*</span></label>
+      <input type="tel" id="upd_phone" required maxlength="20">
+    </div>
+    <div class="form-group">
+      <label>生年月日 <span class="required">*</span></label>
+      <input type="date" id="upd_birthdate" required>
+    </div>
+    <div class="form-group">
+      <label>郵便番号 <span class="required">*</span></label>
+      <input type="text" id="upd_zip" required maxlength="10">
+    </div>
+    <div class="form-group">
+      <label>住所 <span class="required">*</span></label>
+      <input type="text" id="upd_address" required maxlength="200">
+    </div>
+    <button type="submit" class="btn" id="updateBtn">更新する</button>
+    <div id="updateMessage" class="message"></div>
+  </form>
+
   <form id="reservationForm" class="hidden" onsubmit="submitReservation(event)">
     <div class="section-title">📅 来場予約</div>
 
@@ -263,9 +293,17 @@
       document.getElementById('loadingArea').style.display = 'none';
 
       if (data.registered) {
-        document.getElementById('headerSub').textContent = '来場予約フォーム';
-        await Promise.all([loadEvents(), loadPrices()]);
-        document.getElementById('reservationForm').classList.remove('hidden');
+        // 情報変更モードかどうか確認
+        const mode = new URLSearchParams(window.location.search).get('mode');
+        if (mode === 'update') {
+          document.getElementById('headerSub').textContent = '登録情報の変更';
+          await loadUserInfo();
+          document.getElementById('updateForm').classList.remove('hidden');
+        } else {
+          document.getElementById('headerSub').textContent = '来場予約フォーム';
+          await Promise.all([loadEvents(), loadPrices()]);
+          document.getElementById('reservationForm').classList.remove('hidden');
+        }
       } else {
         document.getElementById('headerSub').textContent = '初回登録フォーム';
         document.getElementById('registrationForm').classList.remove('hidden');
@@ -273,6 +311,63 @@
 
     } catch (e) {
       document.getElementById('loadingArea').textContent = 'エラーが発生しました。LINEアプリから開いてください。';
+    }
+  }
+
+  async function loadUserInfo() {
+    const res  = await fetch(`${GAS_URL}?action=getUserInfo&shopId=${shopId}&userId=${lineUserId}`);
+    const data = await res.json();
+    if (data.success) {
+      document.getElementById('upd_name').value      = data.name      || '';
+      document.getElementById('upd_email').value     = data.email     || '';
+      document.getElementById('upd_phone').value     = data.phone     || '';
+      document.getElementById('upd_birthdate').value = data.birthdate || '';
+      document.getElementById('upd_zip').value       = data.zip       || '';
+      document.getElementById('upd_address').value   = data.address   || '';
+    }
+  }
+
+  async function submitUpdate(e) {
+    e.preventDefault();
+    const btn = document.getElementById('updateBtn');
+    btn.disabled = true;
+    btn.textContent = '送信中...';
+
+    const params = new URLSearchParams({
+      action:    'updateUserInfo',
+      shopId:    shopId,
+      userId:    lineUserId,
+      name:      document.getElementById('upd_name').value.trim(),
+      email:     document.getElementById('upd_email').value.trim(),
+      phone:     document.getElementById('upd_phone').value.trim(),
+      birthdate: document.getElementById('upd_birthdate').value,
+      zip:       document.getElementById('upd_zip').value.trim(),
+      address:   document.getElementById('upd_address').value.trim()
+    });
+
+    try {
+      const res    = await fetch(`${GAS_URL}?${params}`);
+      const result = await res.json();
+      const msg    = document.getElementById('updateMessage');
+      if (result.success) {
+        document.getElementById('updateForm').classList.add('hidden');
+        msg.className = 'message success';
+        msg.textContent = '✅ 登録情報を更新しました。';
+        msg.style.display = 'block';
+      } else {
+        msg.className = 'message error';
+        msg.textContent = '⚠️ ' + result.message;
+        msg.style.display = 'block';
+        btn.disabled = false;
+        btn.textContent = '更新する';
+      }
+    } catch (err) {
+      const msg = document.getElementById('updateMessage');
+      msg.className = 'message error';
+      msg.textContent = '⚠️ ' + err.toString();
+      msg.style.display = 'block';
+      btn.disabled = false;
+      btn.textContent = '更新する';
     }
   }
 
