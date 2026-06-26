@@ -196,17 +196,31 @@
       </select>
     </div>
     <div class="form-group">
-      <label>参加人数 <span class="required">*</span></label>
-      <select id="count" required>
+      <label>大人の人数 <span class="required">*</span></label>
+      <select id="adultCount" required onchange="updateFee()">
         <option value="">選択してください</option>
+        <option value="0">0名</option>
         <option value="1">1名</option>
         <option value="2">2名</option>
         <option value="3">3名</option>
         <option value="4">4名</option>
         <option value="5">5名</option>
-        <option value="6">6名以上</option>
       </select>
     </div>
+    <div class="form-group">
+      <label>こどもの人数 <span class="required">*</span></label>
+      <select id="childCount" required onchange="updateFee()">
+        <option value="">選択してください</option>
+        <option value="0">0名</option>
+        <option value="1">1名</option>
+        <option value="2">2名</option>
+        <option value="3">3名</option>
+        <option value="4">4名</option>
+        <option value="5">5名</option>
+      </select>
+    </div>
+
+    <div id="feeDisplay" style="display:none; background:#FFF3E0; border-left:4px solid #FF6B35; padding:14px 16px; border-radius:8px; margin-bottom:18px; font-size:15px; color:#333; line-height:1.9;"></div>
 
     <div class="consent-box">
       <label>
@@ -225,8 +239,11 @@
 
 <script>
   let lineUserId = null;
+  let adultPrice = 0;
+  let childPrice = 0;
 
-  const GAS_URL = 'https://script.google.com/macros/s/AKfycbwfwN7iIYY-7VxG5JCjkjTG3E5XPrHbxWN7lNeuK9_ScyDXNwcwFuS8vYGZh2wk3oJI/exec';
+  const GAS_URL = 'https://script.google.com/macros/s/AKfycbym2Gzed66_kHtluEeWp0IQtoB0WnjBKVz1wMEIVB88BBp09iji91KHft8sCUVbQU-IKw/exec';
+  const shopId = new URLSearchParams(window.location.search).get('shopId') || '';
 
   async function init() {
     try {
@@ -240,14 +257,14 @@
       const profile = await liff.getProfile();
       lineUserId = profile.userId;
 
-      const res = await fetch(`${GAS_URL}?action=checkRegistered&userId=${lineUserId}`);
+      const res = await fetch(`${GAS_URL}?action=checkRegistered&shopId=${shopId}&userId=${lineUserId}`);
       const data = await res.json();
 
       document.getElementById('loadingArea').style.display = 'none';
 
       if (data.registered) {
         document.getElementById('headerSub').textContent = '来場予約フォーム';
-        await loadEvents();
+        await Promise.all([loadEvents(), loadPrices()]);
         document.getElementById('reservationForm').classList.remove('hidden');
       } else {
         document.getElementById('headerSub').textContent = '初回登録フォーム';
@@ -259,8 +276,38 @@
     }
   }
 
+  async function loadPrices() {
+    const res = await fetch(`${GAS_URL}?action=getPrices&shopId=${shopId}`);
+    const data = await res.json();
+    adultPrice = data.adultPrice || 0;
+    childPrice = data.childPrice || 0;
+  }
+
+  function updateFee() {
+    const ac = parseInt(document.getElementById('adultCount').value) || 0;
+    const cc = parseInt(document.getElementById('childCount').value) || 0;
+    const feeDiv = document.getElementById('feeDisplay');
+
+    if (document.getElementById('adultCount').value === '' || document.getElementById('childCount').value === '') {
+      feeDiv.style.display = 'none';
+      return;
+    }
+
+    const total = ac * adultPrice + cc * childPrice;
+    let html = '';
+    if (adultPrice > 0) html += `大人 ${ac}名 × ${adultPrice.toLocaleString()}円<br>`;
+    if (childPrice > 0) html += `こども ${cc}名 × ${childPrice.toLocaleString()}円<br>`;
+    if (adultPrice === 0 && childPrice === 0) {
+      html = '利用料は無料です';
+    } else {
+      html += `<strong>利用料：${total.toLocaleString()}円</strong>`;
+    }
+    feeDiv.innerHTML = html;
+    feeDiv.style.display = 'block';
+  }
+
   async function loadEvents() {
-    const res = await fetch(`${GAS_URL}?action=getEvents`);
+    const res = await fetch(`${GAS_URL}?action=getEvents&shopId=${shopId}`);
     const events = await res.json();
     const select = document.getElementById('eventDate');
 
@@ -275,7 +322,7 @@
     events.forEach(ev => {
       const opt = document.createElement('option');
       opt.value = ev.date;
-      opt.textContent = `${ev.dateLabel} ${ev.time}　${ev.location}`;
+      opt.textContent = `${ev.dateLabel}　${ev.time}　${ev.location}`;
       select.appendChild(opt);
     });
   }
@@ -288,13 +335,14 @@
 
     const params = new URLSearchParams({
       action: 'registerUser',
+      shopId: shopId,
       userId: lineUserId,
-      name: document.getElementById('reg_name').value.trim(),
-      email: document.getElementById('reg_email').value.trim(),
-      phone: document.getElementById('reg_phone').value.trim(),
+      name:      document.getElementById('reg_name').value.trim(),
+      email:     document.getElementById('reg_email').value.trim(),
+      phone:     document.getElementById('reg_phone').value.trim(),
       birthdate: document.getElementById('reg_birthdate').value,
-      zip: document.getElementById('reg_zip').value.trim(),
-      address: document.getElementById('reg_address').value.trim()
+      zip:       document.getElementById('reg_zip').value.trim(),
+      address:   document.getElementById('reg_address').value.trim()
     });
 
     try {
@@ -305,7 +353,7 @@
       if (result.success) {
         document.getElementById('registrationForm').classList.add('hidden');
         document.getElementById('headerSub').textContent = '来場予約フォーム';
-        await loadEvents();
+        await Promise.all([loadEvents(), loadPrices()]);
         document.getElementById('reservationForm').classList.remove('hidden');
       } else {
         msg.className = 'message error';
@@ -324,15 +372,24 @@
 
   async function submitReservation(e) {
     e.preventDefault();
+    const adultCount = parseInt(document.getElementById('adultCount').value) || 0;
+    const childCount = parseInt(document.getElementById('childCount').value) || 0;
+    if (adultCount + childCount === 0) {
+      alert('大人またはこどもの人数を1名以上選択してください。');
+      return;
+    }
+
     const btn = document.getElementById('submitBtn');
     btn.disabled = true;
     btn.textContent = '送信中...';
 
     const params = new URLSearchParams({
       action: 'submitReservation',
+      shopId: shopId,
       userId: lineUserId,
-      eventDate: document.getElementById('eventDate').value,
-      count: document.getElementById('count').value
+      eventDate:  document.getElementById('eventDate').value,
+      adultCount: adultCount,
+      childCount: childCount
     });
 
     try {
