@@ -352,8 +352,9 @@
       if (result.success) {
         document.getElementById('updateForm').classList.add('hidden');
         msg.className = 'message success';
-        msg.textContent = '✅ 登録情報を更新しました。';
+        msg.innerHTML = '<strong>✅ 登録情報を更新しました。</strong><br><span style="font-size:13px;">内容が正常に保存されました。このページを閉じてください。</span>';
         msg.style.display = 'block';
+        window.scrollTo(0, 0);
       } else {
         msg.className = 'message error';
         msg.textContent = '⚠️ ' + result.message;
