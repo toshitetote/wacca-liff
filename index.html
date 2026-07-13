@@ -418,7 +418,11 @@
     events.forEach(ev => {
       const opt = document.createElement('option');
       opt.value = ev.date;
-      opt.textContent = `${ev.dateLabel}　${ev.time}　${ev.location}`;
+      const remainingText = ev.remaining !== null && ev.remaining !== undefined
+        ? (ev.remaining > 0 ? `　残り${ev.remaining}名分` : '　満席')
+        : '';
+      opt.textContent = `${ev.dateLabel}　${ev.time}　${ev.location}${remainingText}`;
+      if (ev.remaining === 0) opt.disabled = true;
       select.appendChild(opt);
     });
   }
