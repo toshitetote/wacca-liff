@@ -413,7 +413,7 @@
   }
 
   async function loadEvents() {
-    const res = await fetch(`${GAS_URL}?action=getEvents&shopId=${shopId}`);
+    const res = await fetch(`${GAS_URL}?action=getEvents&shopId=${shopId}&userId=${lineUserId || ''}`);
     const events = await res.json();
     const select = document.getElementById('eventDate');
 
