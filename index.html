@@ -287,7 +287,11 @@
 
   async function init() {
     try {
-      await liff.init({ liffId: '2010340510-QLo64pFE' });
+      const liffRes  = await fetch(`${GAS_URL}?action=getLiffId&shopId=${shopId}`);
+      const liffData = await liffRes.json();
+      if (!liffData.liffId) throw new Error('LIFF ID not found');
+
+      await liff.init({ liffId: liffData.liffId });
 
       if (!liff.isLoggedIn()) {
         liff.login();
