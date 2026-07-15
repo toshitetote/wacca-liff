@@ -287,11 +287,17 @@
 
   async function init() {
     try {
-      const liffRes  = await fetch(`${GAS_URL}?action=getLiffId&shopId=${shopId}`);
-      const liffData = await liffRes.json();
-      if (!liffData.liffId) throw new Error('LIFF ID not found');
+      const cacheKey = `liffId_${shopId}`;
+      let liffId = localStorage.getItem(cacheKey);
+      if (!liffId) {
+        const liffRes  = await fetch(`${GAS_URL}?action=getLiffId&shopId=${shopId}`);
+        const liffData = await liffRes.json();
+        liffId = liffData.liffId;
+        if (liffId) localStorage.setItem(cacheKey, liffId);
+      }
+      if (!liffId) throw new Error('LIFF ID not found');
 
-      await liff.init({ liffId: liffData.liffId });
+      await liff.init({ liffId });
 
       if (!liff.isLoggedIn()) {
         liff.login();
